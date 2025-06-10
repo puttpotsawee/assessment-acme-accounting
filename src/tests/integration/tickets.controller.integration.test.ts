@@ -28,6 +28,32 @@ describe('TicketsController', () => {
     const res = await controller.findAll();
     console.log(res);
   });
+  describe('findAll', () => {
+    it('should return all tickets with company and user', async () => {
+      const company = await Company.create({ name: 'test' });
+      const user = await User.create({
+        name: 'Test User',
+        role: UserRole.accountant,
+        companyId: company.id,
+      });
+
+      const ticket = await controller.create({
+        companyId: company.id,
+        type: TicketType.managementReport,
+      });
+      const tickets = await controller.findAll();
+      expect(tickets).toBeDefined();
+      expect(tickets.length).toBeGreaterThan(0);
+      expect(tickets[0].companyId).toBe(company.id);
+      expect(tickets[0].assigneeId).toBe(user.id);
+      const queriedTicket = tickets[0].toJSON();
+      expect(queriedTicket).toBeDefined();
+      expect(queriedTicket.company).toBeDefined();
+      expect(queriedTicket.company.name).toBe(company.name);
+      expect(queriedTicket.assignee).toBeDefined();
+      expect(queriedTicket.assignee.name).toBe(user.name);
+    });
+  });
 
   describe('create', () => {
     describe('managementReport', () => {
