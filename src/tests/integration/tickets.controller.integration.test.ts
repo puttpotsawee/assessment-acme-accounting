@@ -9,14 +9,14 @@ import {
 import { User, UserRole } from '../../../db/models/User';
 import { DbModule } from '../../db.module';
 import { TicketsController } from '../../tickets/tickets.controller';
+import { TicketsModule } from '../../tickets/tickets.module';
 
 describe('TicketsController', () => {
   let controller: TicketsController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [TicketsController],
-      imports: [DbModule],
+      imports: [DbModule, TicketsModule],
     }).compile();
 
     controller = module.get<TicketsController>(TicketsController);
