@@ -1,14 +1,14 @@
 import { ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Company } from '../../db/models/Company';
+import { Company } from '../../../db/models/Company';
 import {
   TicketCategory,
   TicketStatus,
   TicketType,
-} from '../../db/models/Ticket';
-import { User, UserRole } from '../../db/models/User';
-import { DbModule } from '../db.module';
-import { TicketsController } from './tickets.controller';
+} from '../../../db/models/Ticket';
+import { User, UserRole } from '../../../db/models/User';
+import { DbModule } from '../../db.module';
+import { TicketsController } from '../../tickets/tickets.controller';
 
 describe('TicketsController', () => {
   let controller: TicketsController;
