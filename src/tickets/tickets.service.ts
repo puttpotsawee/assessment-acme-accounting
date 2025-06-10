@@ -7,11 +7,21 @@ import {
   TicketType,
 } from '../../db/models/Ticket';
 import { User, UserRole } from '../../db/models/User';
+import { InjectModel } from '@nestjs/sequelize';
 
 @Injectable()
 export class TicketsService {
+  constructor(
+    @InjectModel(Company)
+    private readonly companyModel: typeof Company,
+    @InjectModel(User)
+    private readonly userModel: typeof User,
+    @InjectModel(Ticket)
+    private readonly ticketModel: typeof Ticket,
+  ) {}
+
   async findAll(): Promise<Ticket[]> {
-    return await Ticket.findAll({ include: [Company, User] });
+    return await this.ticketModel.findAll({ include: [Company, User] });
   }
 
   async create(type: TicketType, companyId: number): Promise<Ticket> {
@@ -29,7 +39,7 @@ export class TicketsService {
         ? UserRole.accountant
         : UserRole.corporateSecretary;
 
-    const assignees = await User.findAll({
+    const assignees = await this.userModel.findAll({
       where: { companyId, role: userRole },
       order: [['createdAt', 'DESC']],
     });
@@ -46,7 +56,7 @@ export class TicketsService {
 
     const assignee = assignees[0];
 
-    return Ticket.create({
+    return this.ticketModel.create({
       companyId,
       assigneeId: assignee.id,
       category,
