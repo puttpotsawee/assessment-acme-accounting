@@ -105,6 +105,13 @@ export class TicketsService {
   }
 
   async _resolveAllTickets(companyId: number): Promise<void> {
-    
+    const tickets = await this.ticketModel.findAll({
+      where: { companyId, status: TicketStatus.open },
+    });
+
+    for (const ticket of tickets) {
+      ticket.status = TicketStatus.resolved;
+      await ticket.save();
+    }
   }
 }
