@@ -205,5 +205,45 @@ describe('TicketsService', () => {
         }));
       })
     })
+    describe('type strikeOff', () => {
+      it('throw error if multiple directors exists', async () => {
+        const companyId = 1;
+        const type = TicketType.strikeOff;
+        const users = [
+          { id: 1, role: UserRole.director },
+          { id: 2, role: UserRole.director },
+        ];
+        mockUserModel.findAll = jest.fn().mockResolvedValue(users);
+        await expect(service.create(type, companyId)).rejects.toThrow(
+          new ConflictException(`Multiple users with role ${UserRole.director}. Cannot create a ticket`),
+        );
+      })
+      it('to call _resolveAllTickets function', async () => {
+        const companyId = 99;
+        const type = TicketType.strikeOff;
+        const user = { id: 8, role: UserRole.director };
+        mockUserModel.findAll = jest.fn().mockResolvedValue([user]);
+        const resolveAllTicketsMock = jest.spyOn(service, '_resolveAllTickets')
+        resolveAllTicketsMock.mockResolvedValue();
+        await service.create(type, companyId);
+        expect(resolveAllTicketsMock).toHaveBeenCalledWith(companyId);
+      })
+    })
+  })
+  describe('_resolveAllTickets', () => {
+    it('should resolve all tickets', async () => {
+      const companyId = 33;
+      const mockTickets = [
+        { id: 1, companyId, type: TicketType.managementReport, status: TicketStatus.open, category: TicketCategory.accounting, save: jest.fn() },
+        { id: 2, companyId, type: TicketType.registrationAddressChange, status: TicketStatus.open, category: TicketCategory.corporate, save: jest.fn() },
+      ];
+      mockTicketModel.findAll = jest.fn().mockResolvedValue(mockTickets);
+
+      await service._resolveAllTickets(companyId);
+      for (const ticket of mockTickets) {
+        expect(ticket.status).toBe(TicketStatus.resolved);
+        expect(ticket.save).toHaveBeenCalled();
+      }
+    });
   })
 });

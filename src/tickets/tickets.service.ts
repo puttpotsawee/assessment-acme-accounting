@@ -46,10 +46,18 @@ export class TicketsService {
         ? TicketCategory.accounting
         : TicketCategory.corporate;
 
-    const userRole =
-      type === TicketType.managementReport
-        ? UserRole.accountant
-        : UserRole.corporateSecretary;
+    let userRole: UserRole;
+    switch (type) {
+      case TicketType.managementReport:
+        userRole = UserRole.accountant;
+        break;
+      case TicketType.registrationAddressChange:
+        userRole = UserRole.corporateSecretary;
+        break;
+    case TicketType.strikeOff:
+        userRole = UserRole.director;
+        break;
+    }   
 
     let assignees = await this.userModel.findAll({
       where: { companyId, role: userRole },
@@ -66,6 +74,15 @@ export class TicketsService {
       }
     }
 
+    if (type === TicketType.strikeOff) {
+        // if multiple directors exist, throw an error
+      if (assignees.length > 1) {
+        throw new ConflictException(
+          `Multiple users with role ${UserRole.director}. Cannot create a ticket`,
+        );
+      }
+    }
+
     if (!assignees.length)
       throw new ConflictException(
         `Cannot find user with role ${userRole} to create a ticket`,
@@ -77,6 +94,10 @@ export class TicketsService {
       );
 
     const assignee = assignees[0];
+    
+    if (type === TicketType.strikeOff) {
+      await this._resolveAllTickets(companyId);
+    }
 
     return this.ticketModel.create({
       companyId,
@@ -85,5 +106,16 @@ export class TicketsService {
       type,
       status: TicketStatus.open,
     });
+  }
+
+  async _resolveAllTickets(companyId: number): Promise<void> {
+    const tickets = await this.ticketModel.findAll({
+      where: { companyId, status: TicketStatus.open },
+    });
+
+    for (const ticket of tickets) {
+      ticket.status = TicketStatus.resolved;
+      await ticket.save();
+    }
   }
 }
