@@ -18,12 +18,13 @@ export enum TicketStatus {
 export enum TicketType {
   managementReport = 'managementReport',
   registrationAddressChange = 'registrationAddressChange',
+  strikeOff = 'strikeOff',
 }
 
 export enum TicketCategory {
   accounting = 'accounting',
   corporate = 'registrationAddressChange',
-  management = 'management',
+  management = 'Management',
 }
 
 @Table({ tableName: 'tickets' })
