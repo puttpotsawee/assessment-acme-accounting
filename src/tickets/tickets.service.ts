@@ -49,7 +49,9 @@ export class TicketsService {
     const userRole =
       type === TicketType.managementReport
         ? UserRole.accountant
-        : UserRole.corporateSecretary;
+        : TicketType.strikeOff ?
+            UserRole.director :
+            UserRole.corporateSecretary;
 
     let assignees = await this.userModel.findAll({
       where: { companyId, role: userRole },
@@ -63,6 +65,15 @@ export class TicketsService {
           where: { companyId, role: UserRole.director },
           order: [['createdAt', 'DESC']],
         });
+      }
+    }
+
+    if (type === TicketType.strikeOff) {
+        // if multiple directors exist, throw an error
+      if (assignees.length > 1) {
+        throw new ConflictException(
+          `Multiple users with role ${UserRole.director}. Cannot create a ticket`,
+        );
       }
     }
 
