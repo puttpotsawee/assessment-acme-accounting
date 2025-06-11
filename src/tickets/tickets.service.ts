@@ -46,12 +46,18 @@ export class TicketsService {
         ? TicketCategory.accounting
         : TicketCategory.corporate;
 
-    const userRole =
-      type === TicketType.managementReport
-        ? UserRole.accountant
-        : TicketType.strikeOff ?
-            UserRole.director :
-            UserRole.corporateSecretary;
+    let userRole: UserRole;
+    switch (type) {
+      case TicketType.managementReport:
+        userRole = UserRole.accountant;
+        break;
+      case TicketType.registrationAddressChange:
+        userRole = UserRole.corporateSecretary;
+        break;
+    case TicketType.strikeOff:
+        userRole = UserRole.director;
+        break;
+    }   
 
     let assignees = await this.userModel.findAll({
       where: { companyId, role: userRole },
