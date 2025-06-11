@@ -29,6 +29,18 @@ export class TicketsService {
       throw new ConflictException(`Invalid ticket type: ${type}`);
     }
 
+    // Validate if registrationAddress is existed for this company
+    if (type === TicketType.registrationAddressChange) {
+      const ticketsResult = await this.ticketModel.findAll({
+        where: { companyId, type: TicketType.registrationAddressChange },
+      });
+      if (ticketsResult.length > 0) {
+        throw new ConflictException(
+          `Ticket of type ${type} already exists for this company`,
+        );
+      }
+    }
+
     const category =
       type === TicketType.managementReport
         ? TicketCategory.accounting
