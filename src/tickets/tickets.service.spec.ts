@@ -205,5 +205,19 @@ describe('TicketsService', () => {
         }));
       })
     })
+    describe('type strikeOff', () => {
+      it('throw error if multiple directors exists', async () => {
+        const companyId = 1;
+        const type = TicketType.strikeOff;
+        const users = [
+          { id: 1, role: UserRole.director },
+          { id: 2, role: UserRole.director },
+        ];
+        mockUserModel.findAll = jest.fn().mockResolvedValue(users);
+        await expect(service.create(type, companyId)).rejects.toThrow(
+          new ConflictException(`Multiple users with role ${UserRole.director}. Cannot create a ticket`),
+        );
+      })
+    })
   })
 });
