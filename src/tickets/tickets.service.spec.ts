@@ -6,6 +6,7 @@ import { Company } from '../../db/models/Company';
 import { User, UserRole } from '../../db/models/User';
 import { ConflictException } from '@nestjs/common';
 import { log } from 'console';
+import { assign } from 'lodash';
 
 describe('TicketsService', () => {
   let service: TicketsService;
@@ -111,8 +112,9 @@ describe('TicketsService', () => {
       })
       it('should create Corporate category when type is registrationAddressChange', async () => {
         const companyId = 1;
-        const user = { id: 1, role: 'accountant' };
+        const user = { id: 1, role: UserRole.accountant };
         mockUserModel.findAll = jest.fn().mockResolvedValue([user]);
+        mockTicketModel.findAll = jest.fn().mockResolvedValue([]);
         const type = TicketType.registrationAddressChange;
         const category = TicketCategory.corporate;
         await service.create(type, companyId);
@@ -144,6 +146,7 @@ describe('TicketsService', () => {
         const userRole = UserRole.corporateSecretary;
         const user = { id: 1, role: userRole };
         mockUserModel.findAll = jest.fn().mockResolvedValue([user]);
+        mockTicketModel.findAll = jest.fn().mockResolvedValue([]);
         const type = TicketType.registrationAddressChange;
         await service.create(type, companyId);
         expect(mockUserModel.findAll).toHaveBeenCalledWith({
@@ -151,8 +154,25 @@ describe('TicketsService', () => {
           order: [['createdAt', 'DESC']],
         });
       })
+      it('should assign a director if ticket is registrationAddressChange and no secretary in the company', async () => {
+        const companyId = 1;
+        const userRole = UserRole.director;
+        const user = { id: 1, role: userRole };
+        mockTicketModel.findAll = jest.fn().mockResolvedValue([]);
+        mockUserModel.findAll = jest.fn().mockImplementation((args) => {
+          if (args.where?.role === userRole) {
+            return Promise.resolve([user]);
+          }
+          return Promise.resolve([]);
+        });
+        const type = TicketType.registrationAddressChange;
+        await service.create(type, companyId);
+        expect(mockTicketModel.create).toHaveBeenCalledWith(expect.objectContaining({
+          assigneeId: user.id,
+        }));
+      })
     })
-    describe('findAll user', () => {
+    describe('finding user', () => {
       it('should throw ConflictException if no user found', async () => {
         const companyId = 1;
         const type = TicketType.managementReport;
@@ -169,6 +189,20 @@ describe('TicketsService', () => {
         await expect(service.create(type, companyId)).rejects.toThrow(
           new ConflictException(`Multiple users with role ${UserRole.corporateSecretary}. Cannot create a ticket`),
         );
+      })
+    })
+    describe('with duplicate', () => {
+      it('should throw duplication error if registrationAddressChange exists', async () => {
+        const companyId = 1;
+        const type = TicketType.registrationAddressChange;
+        const user = { id: 1, role: UserRole.corporateSecretary };
+        mockTicketModel.findAll = jest.fn().mockResolvedValue([{ type, companyId }]);
+        await expect(service.create(type, companyId)).rejects.toThrow(
+          new ConflictException(`Ticket of type ${type} already exists for this company`),
+        );
+        expect(mockTicketModel.findAll).toHaveBeenCalledWith(expect.objectContaining({
+          where: { type, companyId },
+        }));
       })
     })
   })

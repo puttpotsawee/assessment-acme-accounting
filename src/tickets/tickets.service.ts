@@ -29,6 +29,18 @@ export class TicketsService {
       throw new ConflictException(`Invalid ticket type: ${type}`);
     }
 
+    // Validate if registrationAddress is existed for this company
+    if (type === TicketType.registrationAddressChange) {
+      const ticketsResult = await this.ticketModel.findAll({
+        where: { companyId, type: TicketType.registrationAddressChange },
+      });
+      if (ticketsResult.length > 0) {
+        throw new ConflictException(
+          `Ticket of type ${type} already exists for this company`,
+        );
+      }
+    }
+
     const category =
       type === TicketType.managementReport
         ? TicketCategory.accounting
@@ -39,10 +51,20 @@ export class TicketsService {
         ? UserRole.accountant
         : UserRole.corporateSecretary;
 
-    const assignees = await this.userModel.findAll({
+    let assignees = await this.userModel.findAll({
       where: { companyId, role: userRole },
       order: [['createdAt', 'DESC']],
     });
+    
+    if (type === TicketType.registrationAddressChange) {
+      // If no corporate secretary, assign a director
+      if (!assignees.length) {
+        assignees = await this.userModel.findAll({
+          where: { companyId, role: UserRole.director },
+          order: [['createdAt', 'DESC']],
+        });
+      }
+    }
 
     if (!assignees.length)
       throw new ConflictException(
