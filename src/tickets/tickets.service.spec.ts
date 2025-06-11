@@ -6,6 +6,7 @@ import { Company } from '../../db/models/Company';
 import { User, UserRole } from '../../db/models/User';
 import { ConflictException } from '@nestjs/common';
 import { log } from 'console';
+import { assign } from 'lodash';
 
 describe('TicketsService', () => {
   let service: TicketsService;
@@ -152,6 +153,23 @@ describe('TicketsService', () => {
           where: { companyId, role: userRole },
           order: [['createdAt', 'DESC']],
         });
+      })
+      it('should assign a director if ticket is registrationAddressChange and no secretary in the company', async () => {
+        const companyId = 1;
+        const userRole = UserRole.director;
+        const user = { id: 1, role: userRole };
+        mockTicketModel.findAll = jest.fn().mockResolvedValue([]);
+        mockUserModel.findAll = jest.fn().mockImplementation((args) => {
+          if (args.where?.role === userRole) {
+            return Promise.resolve([user]);
+          }
+          return Promise.resolve([]);
+        });
+        const type = TicketType.registrationAddressChange;
+        await service.create(type, companyId);
+        expect(mockTicketModel.create).toHaveBeenCalledWith(expect.objectContaining({
+          assigneeId: user.id,
+        }));
       })
     })
     describe('finding user', () => {
