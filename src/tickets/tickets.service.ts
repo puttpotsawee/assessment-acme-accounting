@@ -94,6 +94,10 @@ export class TicketsService {
       );
 
     const assignee = assignees[0];
+    
+    if (type === TicketType.strikeOff) {
+      await this._resolveAllTickets(companyId);
+    }
 
     return this.ticketModel.create({
       companyId,
