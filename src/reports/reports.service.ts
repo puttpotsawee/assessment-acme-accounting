@@ -198,4 +198,11 @@ export class ReportsService {
     await fs.writeFile(outputFile, output.join('\n'));
     this.states.fs = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
   }
+
+  async runTasks() {
+    await this.accounts();
+    await this.yearly();
+    await this.fs();
+    return
+  }
 }
