@@ -57,18 +57,23 @@ describe('ReportsService', () => {
   describe('readFileCached', () => {
     it('should return content from cache if hit', async () => {
       const filePath = 'test.txt';
-      const content = 'Test content';
+      const content = [[1,2,3,4], [5,6,7,8]];
       service['fileCache'][filePath] = content;
       const result = await service.readFileCached(filePath);
       expect(result).toBe(content);
     })
     it('should call fs.readFile if cache miss', async () => {
       const filePath = 'test.txt';
-      const content = 'Test content';
+      const content = "content,col,of,csv\n1,2,3,4\n5,6,7,8";
       const fsMock = jest.spyOn(fs, 'readFile').mockResolvedValue(content);
       const result = await service.readFileCached(filePath);
-      expect(result).toBe(content);
-      expect(service['fileCache'][filePath]).toBe(content);
+      const parsedContent = [
+        ['content', 'col', 'of', 'csv'], 
+        ['1', '2', '3', '4'], 
+        ['5', '6', '7', '8']
+      ]
+      expect(result).toEqual(parsedContent);
+      expect(service['fileCache'][filePath]).toEqual(parsedContent);
       expect(fsMock).toHaveBeenCalledWith(filePath, 'utf-8');
     })
   })

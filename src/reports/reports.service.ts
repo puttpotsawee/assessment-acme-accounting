@@ -17,7 +17,7 @@ export class ReportsService {
     fs: 'idle',
     error: null,
   };
-  private fileCache: Record<string, string> = {};
+  private fileCache: Record<string, Array<Array<string | number>>> = {};
 
   state(scope: string) {
     return this.states[scope];
@@ -32,10 +32,9 @@ export class ReportsService {
     const files = await fs.readdir(tmpDir)
     const process = files.map(async (file) => {
       if (file.endsWith('.csv')) {
-        const buff = await fs.readFile(path.join(tmpDir, file), 'utf-8')
-        const lines = buff.trim().split('\n');
+        const lines = await this.readFileCached(path.join(tmpDir, file), 'utf-8')
         for (const line of lines) {
-          const [, account, , debit, credit] = line.split(',');
+          const [, account, , debit, credit] = line;
           if (!accountBalances[account]) {
             accountBalances[account] = 0;
           }
@@ -62,10 +61,9 @@ export class ReportsService {
     const files = await fs.readdir(tmpDir);
     const process = files.map(async (file) => {
       if (file.endsWith('.csv') && file !== 'yearly.csv') {
-        const buff = await fs.readFile(path.join(tmpDir, file), 'utf-8')
-        const lines = buff.trim().split('\n');
+        const lines = await this.readFileCached(path.join(tmpDir, file), 'utf-8')
         for (const line of lines) {
-          const [date, account, , debit, credit] = line.split(',');
+          const [date, account, , debit, credit] = line;
           if (account === 'Cash') {
             const year = new Date(date).getFullYear();
             if (!cashByYear[year]) {
@@ -135,11 +133,10 @@ export class ReportsService {
     const files = await fs.readdir(tmpDir)
     const process = files.map(async (file) => {
       if (file.endsWith('.csv') && file !== 'fs.csv') {
-        const buff = await fs.readFile(path.join(tmpDir, file), 'utf-8')
-        const lines = buff.trim().split('\n');
+        const lines = await this.readFileCached(path.join(tmpDir, file), 'utf-8')
 
         for (const line of lines) {
-          const [, account, , debit, credit] = line.split(',');
+          const [, account, , debit, credit] = line;
 
           if (balances.hasOwnProperty(account)) {
             balances[account] +=
@@ -227,12 +224,18 @@ export class ReportsService {
     return
   }
 
-  async readFileCached(filePath: string): Promise<string> {
+  async readFileCached(filePath: string, encoding: string = 'utf-8'): Promise<Array<Array<string | number>>> {
     if (this.fileCache[filePath]) {
+      console.log(`Cache hit for ${filePath}`); 
       return this.fileCache[filePath];
     }
     // Read the file and cache its content
-    const content = await fs.readFile(filePath, 'utf-8');
+    const buff = await fs.readFile(filePath, encoding as BufferEncoding);
+    const content: Array<Array<string | number>>= []
+    const lines = buff.trim().split('\n');
+        for (const line of lines) {
+          content.push(line.split(','));
+        }
     this.fileCache[filePath] = content;
     return content;
   }
