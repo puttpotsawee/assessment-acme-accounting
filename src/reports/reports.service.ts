@@ -1,14 +1,21 @@
 import { Injectable } from '@nestjs/common';
+import { error } from 'console';
 import fs from 'fs/promises';
 import path from 'path';
 import { performance } from 'perf_hooks';
 
 @Injectable()
 export class ReportsService {
-  private states = {
+  private states: {
+    accounts: string;
+    yearly: string;
+    fs: string;
+    error: null | { message: string; timestamp: string; stack: any };
+  } = {
     accounts: 'idle',
     yearly: 'idle',
     fs: 'idle',
+    error: null,
   };
 
   state(scope: string) {
@@ -200,9 +207,22 @@ export class ReportsService {
   }
 
   async runTasks() {
-    await this.accounts();
-    await this.yearly();
-    await this.fs();
+    this.states.error = null
+    try {
+      await this.accounts();
+      await this.yearly();
+      await this.fs();
+    } catch (e) {
+      this.states.error = {
+        message: 'Error: ' + e.message,
+        timestamp: new Date().toISOString(),
+        stack: e.stack,
+      };
+      this.states.accounts = 'error';
+      this.states.yearly = 'error';
+      this.states.fs = 'error';
+      throw e; // rethrow the error to be handled by the caller
+    }
     return
   }
 }

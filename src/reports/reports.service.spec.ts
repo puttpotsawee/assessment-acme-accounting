@@ -40,5 +40,19 @@ describe('ReportsService', () => {
       expect(mockYearly).toHaveBeenCalled();
       expect(mockFs).toHaveBeenCalled();
     })
+    it('should save error log in error states if error', async () => {
+      const errorMessage = 'Test error'
+      mockAccounts.mockRejectedValue(new Error(errorMessage));
+      mockYearly.mockResolvedValue(undefined);
+      mockFs.mockResolvedValue(undefined);
+      await expect(service.runTasks()).rejects.toThrow(errorMessage);
+      expect(service.state('error')).toBeDefined();
+      expect(service.state('error').message).toBe('Error: ' + errorMessage);
+      expect(service.state('error').timestamp).toBeDefined();
+      expect(service.state('error').stack).toBeDefined();
+      expect(service.state('accounts')).toBe('error');
+      expect(service.state('yearly')).toBe('error');
+      expect(service.state('fs')).toBe('error');
+    })
   })
 });
