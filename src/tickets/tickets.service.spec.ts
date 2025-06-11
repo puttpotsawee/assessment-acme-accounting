@@ -152,7 +152,7 @@ describe('TicketsService', () => {
         });
       })
     })
-    describe('findAll user', () => {
+    describe('finding user', () => {
       it('should throw ConflictException if no user found', async () => {
         const companyId = 1;
         const type = TicketType.managementReport;
