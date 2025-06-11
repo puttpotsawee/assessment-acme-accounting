@@ -103,4 +103,8 @@ export class TicketsService {
       status: TicketStatus.open,
     });
   }
+
+  async _resolveAllTickets(companyId: number): Promise<void> {
+    
+  }
 }

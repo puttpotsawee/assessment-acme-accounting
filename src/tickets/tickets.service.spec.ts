@@ -220,4 +220,20 @@ describe('TicketsService', () => {
       })
     })
   })
+  describe('_resolveAllTickets', () => {
+    it('should resolve all tickets', async () => {
+      const companyId = 33;
+      const mockTickets = [
+        { id: 1, companyId, type: TicketType.managementReport, status: TicketStatus.open, category: TicketCategory.accounting, save: jest.fn() },
+        { id: 2, companyId, type: TicketType.registrationAddressChange, status: TicketStatus.open, category: TicketCategory.corporate, save: jest.fn() },
+      ];
+      mockTicketModel.findAll = jest.fn().mockResolvedValue(mockTickets);
+
+      await service._resolveAllTickets(companyId);
+      for (const ticket of mockTickets) {
+        expect(ticket.status).toBe(TicketStatus.resolved);
+        expect(ticket.save).toHaveBeenCalled();
+      }
+    });
+  })
 });
