@@ -218,6 +218,16 @@ describe('TicketsService', () => {
           new ConflictException(`Multiple users with role ${UserRole.director}. Cannot create a ticket`),
         );
       })
+      it('to call _resolveAllTickets function', async () => {
+        const companyId = 99;
+        const type = TicketType.strikeOff;
+        const user = { id: 8, role: UserRole.director };
+        mockUserModel.findAll = jest.fn().mockResolvedValue([user]);
+        const resolveAllTicketsMock = jest.spyOn(service, '_resolveAllTickets')
+        resolveAllTicketsMock.mockResolvedValue();
+        await service.create(type, companyId);
+        expect(resolveAllTicketsMock).toHaveBeenCalledWith(companyId);
+      })
     })
   })
   describe('_resolveAllTickets', () => {
