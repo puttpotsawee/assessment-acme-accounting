@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ReportsService } from './reports.service';
-import { after } from 'lodash';
-import { mock } from 'node:test';
+import fs from 'fs/promises';
 
 describe('ReportsService', () => {
   let service: ReportsService;
@@ -53,6 +52,24 @@ describe('ReportsService', () => {
       expect(service.state('accounts')).toBe('error');
       expect(service.state('yearly')).toBe('error');
       expect(service.state('fs')).toBe('error');
+    })
+  })
+  describe('readFileCached', () => {
+    it('should return content from cache if hit', async () => {
+      const filePath = 'test.txt';
+      const content = 'Test content';
+      service['fileCache'][filePath] = content;
+      const result = await service.readFileCached(filePath);
+      expect(result).toBe(content);
+    })
+    it('should call fs.readFile if cache miss', async () => {
+      const filePath = 'test.txt';
+      const content = 'Test content';
+      const fsMock = jest.spyOn(fs, 'readFile').mockResolvedValue(content);
+      const result = await service.readFileCached(filePath);
+      expect(result).toBe(content);
+      expect(service['fileCache'][filePath]).toBe(content);
+      expect(fsMock).toHaveBeenCalledWith(filePath, 'utf-8');
     })
   })
 });

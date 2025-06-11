@@ -17,6 +17,7 @@ export class ReportsService {
     fs: 'idle',
     error: null,
   };
+  private fileCache: Record<string, string> = {};
 
   state(scope: string) {
     return this.states[scope];
@@ -224,5 +225,15 @@ export class ReportsService {
       throw e; // rethrow the error to be handled by the caller
     }
     return
+  }
+
+  async readFileCached(filePath: string): Promise<string> {
+    if (this.fileCache[filePath]) {
+      return this.fileCache[filePath];
+    }
+    // Read the file and cache its content
+    const content = await fs.readFile(filePath, 'utf-8');
+    this.fileCache[filePath] = content;
+    return content;
   }
 }
