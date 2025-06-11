@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import { performance } from 'perf_hooks';
 
@@ -15,18 +15,17 @@ export class ReportsService {
     return this.states[scope];
   }
 
-  accounts() {
+  async accounts() {
     this.states.accounts = 'starting';
     const start = performance.now();
     const tmpDir = 'tmp';
     const outputFile = 'out/accounts.csv';
     const accountBalances: Record<string, number> = {};
-    fs.readdirSync(tmpDir).forEach((file) => {
+    const files = await fs.readdir(tmpDir)
+    const process = files.map(async (file) => {
       if (file.endsWith('.csv')) {
-        const lines = fs
-          .readFileSync(path.join(tmpDir, file), 'utf-8')
-          .trim()
-          .split('\n');
+        const buff = await fs.readFile(path.join(tmpDir, file), 'utf-8')
+        const lines = buff.trim().split('\n');
         for (const line of lines) {
           const [, account, , debit, credit] = line.split(',');
           if (!accountBalances[account]) {
@@ -37,26 +36,26 @@ export class ReportsService {
         }
       }
     });
+    await Promise.all(process);
     const output = ['Account,Balance'];
     for (const [account, balance] of Object.entries(accountBalances)) {
       output.push(`${account},${balance.toFixed(2)}`);
     }
-    fs.writeFileSync(outputFile, output.join('\n'));
+    await fs.writeFile(outputFile, output.join('\n'));
     this.states.accounts = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
   }
 
-  yearly() {
+  async yearly() {
     this.states.yearly = 'starting';
     const start = performance.now();
     const tmpDir = 'tmp';
     const outputFile = 'out/yearly.csv';
     const cashByYear: Record<string, number> = {};
-    fs.readdirSync(tmpDir).forEach((file) => {
+    const files = await fs.readdir(tmpDir);
+    const process = files.map(async (file) => {
       if (file.endsWith('.csv') && file !== 'yearly.csv') {
-        const lines = fs
-          .readFileSync(path.join(tmpDir, file), 'utf-8')
-          .trim()
-          .split('\n');
+        const buff = await fs.readFile(path.join(tmpDir, file), 'utf-8')
+        const lines = buff.trim().split('\n');
         for (const line of lines) {
           const [date, account, , debit, credit] = line.split(',');
           if (account === 'Cash') {
@@ -70,17 +69,18 @@ export class ReportsService {
         }
       }
     });
+    await Promise.all(process);
     const output = ['Financial Year,Cash Balance'];
     Object.keys(cashByYear)
       .sort()
       .forEach((year) => {
         output.push(`${year},${cashByYear[year].toFixed(2)}`);
       });
-    fs.writeFileSync(outputFile, output.join('\n'));
+    await fs.writeFile(outputFile, output.join('\n'));
     this.states.yearly = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
   }
 
-  fs() {
+  async fs() {
     this.states.fs = 'starting';
     const start = performance.now();
     const tmpDir = 'tmp';
@@ -124,12 +124,11 @@ export class ReportsService {
         }
       }
     }
-    fs.readdirSync(tmpDir).forEach((file) => {
+    const files = await fs.readdir(tmpDir)
+    const process = files.map(async (file) => {
       if (file.endsWith('.csv') && file !== 'fs.csv') {
-        const lines = fs
-          .readFileSync(path.join(tmpDir, file), 'utf-8')
-          .trim()
-          .split('\n');
+        const buff = await fs.readFile(path.join(tmpDir, file), 'utf-8')
+        const lines = buff.trim().split('\n');
 
         for (const line of lines) {
           const [, account, , debit, credit] = line.split(',');
@@ -141,6 +140,7 @@ export class ReportsService {
         }
       }
     });
+    await Promise.all(process);
 
     const output: string[] = [];
     output.push('Basic Financial Statement');
@@ -195,7 +195,7 @@ export class ReportsService {
     output.push(
       `Assets = Liabilities + Equity, ${totalAssets.toFixed(2)} = ${(totalLiabilities + totalEquity).toFixed(2)}`,
     );
-    fs.writeFileSync(outputFile, output.join('\n'));
+    await fs.writeFile(outputFile, output.join('\n'));
     this.states.fs = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
   }
 }
