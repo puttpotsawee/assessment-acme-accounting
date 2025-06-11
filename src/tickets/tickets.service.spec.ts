@@ -111,8 +111,9 @@ describe('TicketsService', () => {
       })
       it('should create Corporate category when type is registrationAddressChange', async () => {
         const companyId = 1;
-        const user = { id: 1, role: 'accountant' };
+        const user = { id: 1, role: UserRole.accountant };
         mockUserModel.findAll = jest.fn().mockResolvedValue([user]);
+        mockTicketModel.findAll = jest.fn().mockResolvedValue([]);
         const type = TicketType.registrationAddressChange;
         const category = TicketCategory.corporate;
         await service.create(type, companyId);
@@ -144,6 +145,7 @@ describe('TicketsService', () => {
         const userRole = UserRole.corporateSecretary;
         const user = { id: 1, role: userRole };
         mockUserModel.findAll = jest.fn().mockResolvedValue([user]);
+        mockTicketModel.findAll = jest.fn().mockResolvedValue([]);
         const type = TicketType.registrationAddressChange;
         await service.create(type, companyId);
         expect(mockUserModel.findAll).toHaveBeenCalledWith({
